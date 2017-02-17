@@ -1,0 +1,54 @@
+RewriteEngine On 
+
+<IfModule mod_mime.c>
+	AddType application/xml .osm
+	AddType application/xml .kml
+	AddType application/json .json
+	AddType application/gpx+xml .gpx
+	AddType image/svg+xml .svg
+</IfModule>
+
+<IfModule mod_expires.c>
+	ExpiresActive On
+	ExpiresDefault "access plus 5 seconds"
+	ExpiresByType image/x-icon "access plus 1 month"
+	
+	ExpiresByType image/gif "access plus 1 week"
+	ExpiresByType image/png "access plus 1 week"
+	ExpiresByType image/jpeg "access plus 1 week"
+	ExpiresByType image/svg+xml "access plus 1 week"
+	
+	ExpiresByType text/css "access plus 1 month"
+	
+	ExpiresByType application/x-javascript "access plus 2 hour"
+	ExpiresByType text/javascript "access plus 2 hour"
+	ExpiresByType application/javascript "access plus 2 hour"
+	
+	ExpiresByType application/xml "access plus 2 hour"
+	ExpiresByType application/gpx+xml "access plus 2 hour"
+	ExpiresByType application/json "access plus 2 hour"
+	ExpiresByType application/manifest+json "access plus 2 hour"
+	ExpiresByType text/csv "access plus 2 hour"
+	
+	<IfModule mod_headers.c>
+		Header append Cache-Control "public, must-revalidate"
+	</IfModule>
+</IfModule>
+
+<FilesMatch "\.(json)$">
+	ExpiresDefault A9200
+	Header append Cache-Control "public, must-revalidate"
+</FilesMatch>
+
+# Redirect external .php requests to an extensionless url
+RewriteCond %{THE_REQUEST} ^(.+)\.php([#?][^\ ]*)?\ HTTP/
+RewriteRule ^(.+)\.php$ $1 [R=301,L]
+
+RewriteCond %{HTTP_HOST} ^www\.(.*)$ [NC]
+RewriteRule ^(.*)$ http://%1%{REQUEST_URI} [R=301,QSA,NC,L]
+
+# Resolve extensionless php url, to the php file
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_FILENAME}\.php -f
+RewriteRule ^(.+)$ $1.php [L,NC,QSA]

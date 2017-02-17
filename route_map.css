@@ -1,0 +1,71 @@
+/**
+* @package   PSTR
+* @author    Paweł Cal <MapaInfryRowerowejLublina@gmail.com>
+* @copyright (c) 2016 Paweł Cal <MapaInfryRowerowejLublina@gmail.com>
+* @license   GPL-3.0+
+*
+* Niniejszy program jest wolnym oprogramowaniem; możesz go 
+* rozprowadzać dalej i/lub modyfikować na warunkach Powszechnej
+* Licencji Publicznej GNU, wydanej przez Fundację Wolnego
+* Oprogramowania - według wersji 2-giej tej Licencji lub którejś
+* z późniejszych wersji. 
+* Niniejszy program rozpowszechniany jest z nadzieją, iż będzie on 
+* użyteczny - jednak BEZ JAKIEJKOLWIEK GWARANCJI, nawet domyślnej 
+* gwarancji PRZYDATNOŚCI HANDLOWEJ albo PRZYDATNOŚCI DO OKREŚLONYCH 
+* ZASTOSOWAŃ. W celu uzyskania bliższych informacji - Powszechna 
+* Licencja Publiczna GNU. 
+* Z pewnością wraz z niniejszym programem otrzymałeś też egzemplarz 
+* Powszechnej Licencji Publicznej GNU (GNU General Public License);
+* jeśli nie - napisz do Free Software Foundation, Inc., 675 Mass Ave,
+* Cambridge, MA 02139, USA. 
+*/
+
+.fill { 
+    min-height: 100%;
+    height: 100%;
+	
+	margin: 0px;
+    padding: 0px;
+}
+  
+body,html {
+    margin: 0;
+    padding: 0;
+    
+    font-family: helvetica, sans-serif, arial;
+    /*color: #dddddd;*/
+    /*background: #333333;*/
+    font-size: 14px;
+	
+	height: 100%;
+    /*overflow: hidden;*/
+	width: 100%;
+}
+
+.ol-scale-line {
+    right: 5em;
+    left: initial;
+}
+
+
+
+
+table {
+    font-family: tahoma, verdana, helvetica, Sans-Serif;
+}
+td {
+    padding: 0px;
+    margin: 0px;
+}
+.rte {
+    font-size: x-large;
+    padding-bottom: 0;
+    padding-top: 2pt;
+	text-align: end;
+}
+.km {
+    font-size: x-small;
+    padding-top: 0;
+    padding-left: 5pt;
+	text-align: end;
+}
