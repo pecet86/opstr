@@ -23,19 +23,22 @@
 var Config = {};
 Config.map;
 Config.select;
-Config.lat = 51.110668;
-Config.lon = 17.034993;
+Config.lat = 51.166370;//51.110668;
+Config.lon = 20.100019;//17.034993;
 Config.gg = "EPSG:4326";
 Config.sm = "EPSG:900913";
-Config.zoom = 12; //start zoom
+Config.zoom = 6;//12; //start zoom
 Config.zoomMaxMap = 16; //max przybliżenie mapy
-Config.zoomMinMap = 8; //max oddalenie mapy
+Config.zoomMinMap = 6; //max oddalenie mapy
 Config.extent = [];
 Config.wgs84Sphere = new ol.Sphere(6378137);
 Config.transparency = 0.8;
 Config.width_line = 3;
 Config.highlighted_description = null;
 Config.highlighted_elevation = null;
+Config.extent_data_scale = 1.1;
+Config.simple_data_zoom = 8;
+Config.simple_data_zoom_else = 10;
 
 if(!Array.prototype.equals){
 	// attach the .equals method to Array's prototype to call it on any array
@@ -123,7 +126,7 @@ function init() {
 	var raster = new ol.layer.Tile({
 		title : 'OSM',
 		type : 'base',
-		visible : false,
+		visible : true,
 		source : new ol.source.OSM({
 			crossOrigin : "anonymous"
 		})
@@ -152,7 +155,7 @@ function init() {
 			new ol.layer.Tile({
 				title : 'Carto Dark Matter',
 				type : 'base',
-				visible : true,
+				visible : false,
 				source : new ol.source.XYZ({
 					url : "http://{a-d}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png",
 					attributions : [new ol.Attribution({
@@ -169,6 +172,14 @@ function init() {
 				title : 'Stamen - toner',
 				type : 'base',
 				visible : false,
+			}),
+			new ol.layer.Tile({
+				title : 'OSM - cycle',
+				type : 'base',
+				visible : false,
+				source: new ol.source.OSM({
+					"url" : "http://tile2.opencyclemap.org/transport/{z}/{x}/{y}.png"
+				})
 			}),
 			raster
 		]
@@ -273,7 +284,24 @@ function init() {
 			$(this).find(".ol-control").removeClass("gcd-gl-expanded");
 		});
 	
-	
+	var geolocation = new ol.Geolocation({
+		projection: Config.map.getView().getProjection(),
+		tracking: false,
+		trackingOptions: {
+			enableHighAccuracy: true,
+			maximumAge: 5000  
+		}
+	});
+	geolocation.on('change:position', function() {
+		var p = geolocation.getPosition();
+		geolocation.setTracking(false);	
+		console.log(p[0] + ' : ' + p[1]);
+		view.setZoom(13);
+		view.setCenter([parseFloat(p[0]), parseFloat(p[1])]);
+	});
+	$('#locationButton').click(function(){
+		geolocation.setTracking(true);
+	});	
 }
 
 //permlink
@@ -523,11 +551,11 @@ function refreshHighlightedCenter(center){
 function layerInfra(){
 	var layer;
 	var source;
-	var format = new ol.format.OSMXML();
-	var simpleZoom = 11;
+	var format = new ol.format.GeoJSON();
+	var simpleZoom = Config.simple_data_zoom;
 	
 	$(document).on('zoomend', function (event, old, neww) {
-		if(old <= simpleZoom && neww >= simpleZoom + 1){
+		if(old <= Config.simple_data_zoom && neww >= Config.simple_data_zoom + 1){
 			source.clear();
 		}
 	});
@@ -539,7 +567,7 @@ function layerInfra(){
 			this.set('loadstart', Math.random());
 			var zoom = Config.map.getView().getZoom();
 			
-			ol.extent.scaleFromCenter(extent, 1.5);
+			ol.extent.scaleFromCenter(extent, Config.extent_data_scale);
 			var e2 = ol.proj.transformExtent(extent, Config.sm, Config.gg);
 			
 			source.clear()
@@ -549,10 +577,10 @@ function layerInfra(){
 			var params = {
 				bbox : e2.join(","),
 			};
-			if(zoom <= 11){
+			if(zoom <= Config.simple_data_zoom){
 				params['simple'] = 'true';
 			}
-			params['type'] = 'base';
+			params['type'] = 'hard';
 			
 			
 			$.get( 'visual_str?' + $.param(params), function( data ) {
@@ -590,8 +618,8 @@ function layerInfra(){
 		
 		if(type === "Point"){
 			var name = feature.get("name");
-			if(name && zoom >= 10){
-				var scale = zoom >= 13 ? 1.5 : 1;
+			if(name && zoom >= 11){
+				var scale = (zoom >= 13 ? 1.5 : 1) + ($('#map > .ol-touch').length == 1 ? 0.5 : 0);
 				
 				if(routesData && $.inArray( +feature.getId(), rd_points) >= 0){
 					var cs = [0, 255, 0];
@@ -658,7 +686,7 @@ function layerInfra(){
 				}				
 			}
 		}else if(type === "LineString"){		
-			if(routesData && $.inArray( feature.getId(), routesData.routes) >= 0){
+			if(routesData && $.inArray( ""+feature.getId(), routesData.routes) >= 0){
 				return [new ol.style.Style({
 						fill : new ol.style.Fill({
 							color : [0, 0, 0, 0]
@@ -893,7 +921,7 @@ function createOpis(data, source, cache){
 	
 	if(data.points.length >= 0){
 		var sp = $('#menu .panel:first').parent();
-		$('#menuu:not(.ol-touch)').trigger('open');
+		$('#menu:not(.ol-touch)').trigger('open');
 		sp.animate({
 			scrollTop: sp.scrollTop() + $("#trasa").offset().top + $("#trasa").outerHeight() - $('#trasa li').outerHeight()*6
 		}, 1000);
@@ -902,11 +930,10 @@ function createOpis(data, source, cache){
 function layerInfra2(type){
 	var layer;
 	var source;
-	var format = new ol.format.OSMXML();
-	var simpleZoom = 11;
+	var format = new ol.format.GeoJSON();
 	
 	$(document).on('zoomend', function (event, old, neww) {
-		if(old <= simpleZoom && neww >= simpleZoom + 1){
+		if(old <= Config.simple_data_zoom_else && neww >= Config.simple_data_zoom_else + 1){
 			source.clear();
 		}
 	});
@@ -917,7 +944,7 @@ function layerInfra2(type){
 			this.set('loadstart', Math.random());
 			var zoom = Config.map.getView().getZoom();
 			
-			ol.extent.scaleFromCenter(extent, 1.5);
+			ol.extent.scaleFromCenter(extent, Config.extent_data_scale);
 			var e2 = ol.proj.transformExtent(extent, Config.sm, Config.gg);
 			
 			source.clear()
@@ -927,7 +954,7 @@ function layerInfra2(type){
 			var params = {
 				bbox : e2.join(","),
 			};
-			if(zoom <= 11){
+			if(zoom <= Config.simple_data_zoom_else){
 				return;
 				//params['simple'] = 'true';
 			}
@@ -1249,8 +1276,8 @@ function listenersGA() {
 
 //side menu 
 $(document).ready(function(){
-	$('#menu').BootSideMenu({side:"left", autoClose: false});
 	$('#menu').addClass((ol.has.TOUCH ? ' ol-touch' : ''));
+	$('#menu').BootSideMenu({side:"left", autoClose: $(window).width() <= 640 ? true : false});//ol.has.TOUCH &&
 	$('[data-toggle="tooltip"]').tooltip(); 
     //$('#header .title').html(document.title);
 	
@@ -1274,4 +1301,37 @@ $(document).ready(function(){
 			label = input.val().replace(/\\/g, '/').replace(/.*\//, '');
 		input.trigger('fileselect', [numFiles, label]);
 	});
+	
+	//komunikat startowy, odkomentować
+	if(document.location.hash == "" && document.location.search == ""){
+		$('#start_modal_dialog').modal('show');
+	}
+	$('#start_modal_dialog .podsiec').each(function(k,v){
+		var name = $(this).data('name');
+		$(this).click(function(){
+			$('#start_modal_dialog').modal('hide');
+			if(name == "wroclaw"){			
+				Config.map.getView().setZoom(12);
+				Config.map.getView().setCenter(tt2(17.034993, 51.110668));				
+			}else if(name == "lublin"){
+				Config.map.getView().setZoom(12);
+				Config.map.getView().setCenter(tt2(22.570226, 51.247890));
+			}else if(name == "polska"){
+				Config.map.getView().setZoom(6);
+				Config.map.getView().setCenter(tt2(20.100019, 51.166370));
+			}
+		});
+	});
+	$('#more_info').click(function(){
+		window.location.href = window.location.origin+"/blog/";
+	});
+	$('#help').click(function(evt){
+		evt.stopPropagation();
+		$('#start_modal_dialog').modal('show');
+	});
+	$('#close_menu').click(function(evt){
+		evt.stopPropagation();
+		var sp = $('#menu .panel:first').parent();
+		$('#menu').trigger('close');
+	});	
 });

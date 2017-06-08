@@ -33,7 +33,7 @@ $baza_uzytkownik = 'USER';
 $baza_host = 'localhost';
 $bazw_haslo = 'HASŁO';
 $table_prefix = "str_";
-$table_suffix = "2";
+$table_suffix = "";
 
 if ( ! function_exists('write_log')) {
    function write_log ( $log )  {

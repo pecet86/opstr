@@ -43,9 +43,9 @@ function geDistanceSum(){
 	
 	openConnection();
 	
-	$Query = "SELECT SUM(total) as DISTANCE FROM (SELECT (SUM(`DISTANCE`) * 2) as total FROM {$table_prefix}ways{$table_suffix} WHERE ONEWAY=FALSE AND TYPE = 'base' 
+	$Query = "SELECT SUM(total) as DISTANCE FROM (SELECT (SUM(`DISTANCE`) * 2) as total FROM {$table_prefix}ways{$table_suffix} WHERE ONEWAY=FALSE AND TYPE = 'hard' 
 	UNION ALL 
-	SELECT SUM(`DISTANCE`) as total FROM {$table_prefix}ways{$table_suffix} WHERE ONEWAY = TRUE AND TYPE = 'base') s";
+	SELECT SUM(`DISTANCE`) as total FROM {$table_prefix}ways{$table_suffix} WHERE ONEWAY = TRUE AND TYPE = 'hard') s";
 	$result = mysqli_query($connection, $Query, MYSQLI_USE_RESULT);
 
 	$finfo = 0;

@@ -25,7 +25,7 @@ ini_set ("memory_limit", "100M");
 */
 
 include ('lib/ustawienia.php');
-header('Content-Type: application/xml; charset=utf-8', true);
+header('Content-Type: application/vnd.geo+json; charset=utf-8', true);
 
 
 $bbox = array();
@@ -41,71 +41,95 @@ if(isset($_GET['type'])){
 $connection = mysqli_connect($baza_host, $baza_uzytkownik, $bazw_haslo, $baza_nazwa);// or die('Brak połączenia z serwerem MySQL');
 mysqli_query($connection, "SET CHARSET utf8");
 mysqli_query($connection, "SET NAMES `utf8` COLLATE `utf8_unicode_ci`");
+mysqli_query($connection, "SET SESSION group_concat_max_len = 1000000");
 
 
-function printTag($k, $v){
-	return "<tag k=\"{$k}\" v=\"{$v}\"/>";
-}
-function printNode($id, $lon, $lat, $main, $nr){
-	$xml2 = "<node id=\"-{$id}\" lon=\"{$lon}\" lat=\"{$lat}\">";
-	if($main){
-		$xml2 .= printTag('name', $nr);
-		$xml2 .= printTag('type', 'node');
-	}
-	$xml2 .= "</node>"."\n";
-	return $xml2;
-}
-function printWay($id, $nodes){
-	$xml2 = "<way id=\"-{$id}\">";
-	foreach ($nodes as $id_node){		
-		$xml2 .= "<nd ref=\"-{$id_node}\"/>";
-	}
-	$xml2 .= "</way>"."\n";
-	return $xml2;
-}
 
-echo '<?xml version="1.0" encoding="UTF-8"?><osm version="0.6">'."\n";
+$geojson = array("type" => "FeatureCollection", "features" => array());
 if(!empty($bbox)){
 	$bbox_q = " MBRIntersects(Envelope(GeomFromText('LineString({$bbox[1]} {$bbox[0]}, {$bbox[3]} {$bbox[2]})')), w.ENVELOPE) = 1";
 	
 	$Query = '';
 	if($simple){
-		$Query = "SELECT wn.FK_way, wn.FK_node, X(n.GPS) AS lat, Y(n.GPS) AS lon, n.TYPE, n.NUMBER
-			FROM {$table_prefix}ways{$table_suffix} w INNER JOIN {$table_prefix}way_nodes{$table_suffix} wn ON w.FK_ID = wn.FK_way AND w.TYPE = '{$type}' INNER JOIN {$table_prefix}nodes{$table_suffix} n ON n.FK_ID = wn.FK_node
-			WHERE n.TYPE = 'main' AND {$bbox_q}"; 
+		$Query = "SELECT w.FK_ID, GROUP_CONCAT(CONCAT('[', Y( n.GPS ), ',', X( n.GPS ), ']') ORDER BY wn.ID ASC SEPARATOR ', ') AS gpsx
+			FROM {$table_prefix}ways{$table_suffix} w
+			INNER JOIN {$table_prefix}way_nodes{$table_suffix} wn ON w.FK_ID = wn.FK_way
+			AND w.TYPE =  '{$type}' 
+			INNER JOIN {$table_prefix}nodes{$table_suffix} n ON n.FK_ID = wn.FK_node
+			WHERE n.TYPE = 'main' AND {$bbox_q} 
+			GROUP BY w.FK_ID";
 	}else{
-		$Query = "SELECT wn.FK_way, wn.FK_node, X(n.GPS) AS lat, Y(n.GPS) AS lon, n.TYPE, n.NUMBER
-			FROM {$table_prefix}ways{$table_suffix} w INNER JOIN {$table_prefix}way_nodes{$table_suffix} wn ON w.FK_ID = wn.FK_way AND w.TYPE = '{$type}' INNER JOIN {$table_prefix}nodes{$table_suffix} n ON n.FK_ID = wn.FK_node
-			WHERE {$bbox_q}"; 	
+		$Query = "SELECT w.FK_ID, GROUP_CONCAT(CONCAT('[', Y( n.GPS ), ',', X( n.GPS ), ']') ORDER BY wn.ID ASC SEPARATOR ', ') AS gpsx
+			FROM {$table_prefix}ways{$table_suffix} w
+			INNER JOIN {$table_prefix}way_nodes{$table_suffix} wn ON w.FK_ID = wn.FK_way
+			AND w.TYPE =  '{$type}' 
+			INNER JOIN {$table_prefix}nodes{$table_suffix} n ON n.FK_ID = wn.FK_node
+			WHERE {$bbox_q} 
+			GROUP BY w.FK_ID";
 	}
 	//var_dump($Query);
-	
-	$result = mysqli_query($connection, $Query, MYSQLI_USE_RESULT);
 
-	$nodes = array();
-	$ways = array();	
-	if($result){
-		while($row = $result->fetch_assoc()) {			
-			$id_way = $row['FK_way'];
-			$id_node = $row['FK_node'];
-			if(!array_key_exists($id_way, $ways)){
-				$ways[$id_way] = array();				
-			}
-			$ways[$id_way][] = $id_node;
-						
-			if(!in_array($id_node, $nodes)){
-				$nodes[] = $id_node;
-				echo printNode($id_node, $row['lon'], $row['lat'], $row['TYPE']=='main', $row['NUMBER']);
-			}			
+	$time_start1 = microtime(true);
+	$result = mysqli_query($connection, $Query, MYSQLI_USE_RESULT);
+	write_log('(mysql):'. round((microtime(true) - $time_start1) * 1000, 5) .' ms');
+	
+	$time_start2 = microtime(true);
+	if($result){		
+		while($row = $result->fetch_assoc()) {	
+			$gpsx = json_decode('['.$row['gpsx'].']', true);
+			if(is_null($gpsx)) continue;
+		
+			$geojson["features"][] = array(
+				"id" => $row['FK_ID'],
+				"type" => "Feature",
+				"geometry" => array(
+					"type" => "LineString",
+					"coordinates" => 	$gpsx
+				),
+				"properties" => array(
+					"ID" => $row['FK_ID']
+				)
+			);
 		}
 		$result->close();		
 	}
+	write_log('(php):'. round((microtime(true) - $time_start2) * 1000, 5) .' ms');
 	
-	foreach ($ways as $id_way => $way_nodes){		
-		echo printWay($id_way, $way_nodes);
+	if($type == 'hard'){
+		$Query = "SELECT DISTINCT n.FK_ID, n.NUMBER, n.TYPE, CONCAT('[', Y( n.GPS ), ',', X( n.GPS ), ']') as gpsx
+			FROM {$table_prefix}ways{$table_suffix} w
+			INNER JOIN {$table_prefix}way_nodes{$table_suffix} wn ON w.FK_ID = wn.FK_way
+			AND w.TYPE =  'hard' 
+			INNER JOIN {$table_prefix}nodes{$table_suffix} n ON n.FK_ID = wn.FK_node 
+			AND n.TYPE = 'main'
+			WHERE {$bbox_q}";
+		//var_dump($Query);
+
+		$result = mysqli_query($connection, $Query, MYSQLI_USE_RESULT);
+		if($result){
+			while($row = $result->fetch_assoc()) {	
+				$gpsx = json_decode($row['gpsx'], true);
+				if(is_null($gpsx)) continue;
+			
+				$geojson["features"][] = array(
+					"id" => $row['FK_ID'],
+					"type" => "Feature",
+					"geometry" => array(
+						"type" => "Point",
+						"coordinates" => $gpsx
+					),
+					"properties" => array(
+						"ID" => $row['FK_ID'],
+						"type" => 'node',
+						"name" => $row['NUMBER']
+					)
+				);
+			}
+			$result->close();		
+		}
 	}
 }
-echo '</osm>';	
+echo json_encode($geojson);	
 	
 mysqli_close($connection);
 ?>

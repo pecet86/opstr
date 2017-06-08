@@ -69,7 +69,7 @@ function geDisplay($points){
 	$nodes = array();
 	if(!empty($points)){
 		$points = array_map(function($v){
-			return -$v;
+			return $v;
 		}, $points);
 		
 		$ids = implode(', ', array_unique($points));
@@ -83,7 +83,7 @@ function geDisplay($points){
 			
 		if($result){
 			while($row = $result->fetch_assoc()) {	
-				$id = -$row['FK_ID'];
+				$id = $row['FK_ID'];
 				
 				$nodes[$id] = array(
 					'województwo_srt' => $row['PROVINCE_SORT'],

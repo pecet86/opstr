@@ -63,28 +63,29 @@ ol.interaction.SelectCustom.prototype.handleEvent = function (mapBrowserEvent) {
 	var length = this.features_.length;
 
 	var change = false;
+	var that = this;
 	map.forEachFeatureAtPixel(mapBrowserEvent.pixel,
 		function (feature, layer) {
-		if (this.filter_(feature, layer)) {
+		if (that.filter_(feature, layer)) {
 			if(add){
 				if(length == 0){
 					var f = feature.clone();
 					f.setId(feature.getId())
-					this.features_.push(f);
+					that.features_.push(f);
 					change = true;
 				}else if(feature_last.getId() == feature.getId()){
 					//dodawaj ale tylko raz po sobie
 				}else{
 					var f = feature.clone();
 					f.setId(feature.getId())
-					this.features_.push(f);
+					that.features_.push(f);
 					change = true;
 				}
 			}else if(remove){
 				if(length == 0){
 					//ignore
 				}else if(feature_last.getId() == feature.getId()){
-					this.features_.pop();
+					that.features_.pop();
 					change = true;
 				}else{
 					//usuwaj tylko ostatni
@@ -152,12 +153,12 @@ function createSelection(){
 			}
 			$('#reset, #remove_last, #brochure_direction, #print_direction, #download button, #save_session').attr("disabled", null);			
 			
-			var projection = Config.map.getView().getProjection();
+			/*var projection = Config.map.getView().getProjection();
 			var metersPerUnit = projection.getMetersPerUnit();
 			var pointResolution = projection.getPointResolution(
 				Config.map.getView().getResolution(), 
 				Config.map.getView().getCenter()
-			) * metersPerUnit;
+			) * metersPerUnit;*/
 				
 			var extent = Config.map.getView().calculateExtent(Config.map.getSize());
 			$.each(features, function(key, feature){	
@@ -166,7 +167,7 @@ function createSelection(){
 					5000, 64).transform(Config.gg, Config.sm).getExtent();
 				extent = ol.extent.extend(extent, e2);
 			});
-			ol.extent.scaleFromCenter(extent, 2);
+			ol.extent.scaleFromCenter(extent, 1.5);
 			
 			var data = {
 				points : $.map(features, function(value, key){

@@ -133,7 +133,7 @@ function createElevationGraph(data, el) {
 	}
 	function ex(i){
 		if(data[i].name){
-			var id = -(+data[i].id);
+			var id = (+data[i].id);
 
 			if(id != Config.highlighted_elevation){
 				Config.highlighted_elevation = id;

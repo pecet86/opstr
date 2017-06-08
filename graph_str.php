@@ -44,7 +44,7 @@ function idsToGPS($points){
 	global $connection, $table_prefix;
 	
 	$ids = implode(', ', array_map(function($v){
-		return -$v;
+		return $v;
 	}, $points));
 	
 	$Query = "SELECT ID, X(GPS) AS lat, Y(GPS) AS lon FROM {$table_prefix}elements{$table_suffix} WHERE ID IN ({$ids}) AND TYPE = 'node'";
@@ -72,7 +72,7 @@ function idsToNumber($points){
 	//write_log($points);
 	
 	$ids = implode(', ', array_map(function($v){
-		return -$v;
+		return $v;
 	}, $points));
 	
 	//write_log($ids);
@@ -85,7 +85,7 @@ function idsToNumber($points){
 	$r = array();
 	if($result){
 		while($row=mysqli_fetch_array($result)) { 
-			$r[-$row['FK_ID']] = $row['NUMBER'];
+			$r[$row['FK_ID']] = $row['NUMBER'];
 		}
 	}
 	
@@ -106,6 +106,7 @@ function idsToNumber($points){
 function getGraph($points){
 	global $connection, $table_prefix, $table_suffix;
 	
+	$time_start1x = microtime(true);
 	openConnection();
 	
 	$bbox = array();
@@ -121,17 +122,19 @@ function getGraph($points){
 		//$temp = idsToGPS($points);
 
 		$Query = "SELECT FK_ID, DISTANCE, ONEWAY, NODE_START, NODE_END FROM {$table_prefix}ways{$table_suffix} 
-			WHERE {$bbox_q} AND TYPE = 'base'";// OR {$bbox_q2}";
+			WHERE {$bbox_q} AND TYPE = 'hard'";// OR {$bbox_q2}";
 		
 		//var_dump($Query);
 		$result = mysqli_query($connection, $Query, MYSQLI_USE_RESULT);
+		write_log('(mysql):'. round((microtime(true) - $time_start1x) * 1000, 5) .' ms');
 		
+		$time_start2x = microtime(true);
 		$nodes = array();	
 		if($result){
 			while($row = $result->fetch_assoc()) {	
 				$id_node_start = $row['NODE_START'];
 				$id_node_end = $row['NODE_END'];
-				$id_way = "".-$row['FK_ID'];
+				$id_way = "".$row['FK_ID'];
 				$distance = floatval($row['DISTANCE']);
 				$oneway = filter_var($row['ONEWAY'], FILTER_VALIDATE_BOOLEAN);
 				
@@ -161,6 +164,7 @@ function getGraph($points){
 			}
 		}		
 		$results = $nodes;
+		write_log('(php):'. round((microtime(true) - $time_start2x) * 1000, 5) .' ms');
 		
 		//var_dump(json_encode($results));
 	}

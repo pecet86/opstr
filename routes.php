@@ -26,6 +26,9 @@ set_time_limit(120);
 include ('lib/FileCache.php');
 include ('lib/ustawienia.php');
 
+write_log('START ROUTES');
+$time_startA = microtime(true);
+
 if($_SERVER['REQUEST_METHOD'] != "POST") {
     header("HTTP/1.0 403 Forbidden");
     print("Forbidden");
@@ -52,7 +55,7 @@ include('graph_str.php');
 function findShort($pointS, $pointE){
 	global $results, $graph;
 	if (array_key_exists($pointS, $graph)){//jeszeli bezpoœredni nastêpnik
-		//$time_start1 = microtime(true);
+		$time_start1 = microtime(true);
 	
 		$ways = $graph[$pointS];	
 		if (array_key_exists($pointE, $ways)){
@@ -63,7 +66,7 @@ function findShort($pointS, $pointE){
 			array_push($results['distance'], $way[0]);
 			array_push($results['ds'], true);
 			
-			//write_log('(findShort):'. round((microtime(true) - $time_start1) * 1000, 5) .' ms');
+			write_log('(findShort)['.$pointS.'-'.$pointE.']:'. round((microtime(true) - $time_start1) * 1000, 5) .' ms');
 			return $pointE;
 		}		
 	}
@@ -71,7 +74,7 @@ function findShort($pointS, $pointE){
 }
 function findPath($pointS, $pointE){
 	global $dijkstra, $results;
-	//$time_start1 = microtime(true);
+	$time_start1 = microtime(true);
 	
 	$path = $dijkstra->shortestPaths($pointS, $pointE);
 	if(empty($path)){
@@ -89,12 +92,12 @@ function findPath($pointS, $pointE){
 	$results['distance'] = array_merge($results['distance'], $path[2][0]);
 	array_push($results['ds'], false);
 
-	//write_log('(findPath):'. round((microtime(true) - $time_start1) * 1000, 5) .' ms');
+	write_log('(findPath)['.$pointS.'-'.$pointE.']:'. round((microtime(true) - $time_start1) * 1000, 5) .' ms');
 	return $pointE;
 }
 function fromCache($pointS, $pointE){
 	global $cache, $results;
-	//$time_start1 = microtime(true);
+	$time_start1 = microtime(true);
 	
 	$key = 'str_route_'.$pointS.'-'.$pointE;
 	
@@ -109,12 +112,12 @@ function fromCache($pointS, $pointE){
 	$results['distance'] = array_merge($results['distance'], $result[2]);
 	array_push($results['ds'], false);
 	
-	//write_log('(fromCache):'. round((microtime(true) - $time_start1) * 1000, 5) .' ms');
+	write_log('(fromCache)['.$pointS.'-'.$pointE.']:'. round((microtime(true) - $time_start1) * 1000, 5) .' ms');
 	return $pointE;
 }
 function toCache($pointS, $pointE, $points, $routes, $distance){
 	global $cache;
-	//$time_start1 = microtime(true);
+	$time_start1 = microtime(true);
 	
 	$key = 'str_route_'.$pointS.'-'.$pointE;
 	$result = $cache->fetch($key);
@@ -122,38 +125,39 @@ function toCache($pointS, $pointE, $points, $routes, $distance){
 		$result = array($points, $routes, $distance);
 		$cache->store($key, $result, 86400);
 		
-		//write_log('(toCache):'. round((microtime(true) - $time_start1) * 1000, 5) .' ms');
+		write_log('(toCache)['.$pointS.'-'.$pointE.']:'. round((microtime(true) - $time_start1) * 1000, 5) .' ms');
 	}
 }
 
-
-//$time_start = microtime(true);
-//error_log('START ROUTES');
+$time_start = microtime(true);
 $graph = getGraph($points);
-//write_log('(GRAPH):'. round((microtime(true) - $time_start) * 1000, 5) .' ms');
-//$time_start = microtime(true);
+write_log('(GRAPH):'. round((microtime(true) - $time_start) * 1000, 5) .' ms');
 
 
-
+$time_start = microtime(true);
 $dijkstra = new Dijkstra($graph);
+write_log('(GRAPH2):'. round((microtime(true) - $time_start) * 1000, 5) .' ms');
+
+
+$time_start = microtime(true);
 $results = array('points' => array(), 'routes' => array(), 'distance' => array(), 'ds' => array());
 $point1 = array_shift($points);
 while (count($points) > 0) {
 	$point2 = array_shift($points);
 	
-	$found = findShort($point1, $point2);
+	$found = findShort($point1, $point2);//s¹siaduj¹ce punkty
 	if(!is_bool($found)){
 		$point1 = $found;
 		continue;
 	}
 	
-	$found = fromCache($point1, $point2);
+	$found = fromCache($point1, $point2);//najkrótsza œcie¿ka z pamiêci
 	if(!is_bool($found)){
 		$point1 = $found;
 		continue;
 	}
 	
-	$found = findPath($point1, $point2);
+	$found = findPath($point1, $point2);//znajdŸ œcie¿kê
 	if(!is_bool($found)){
 		$point1 = $found;
 	}else if(!$found){
@@ -162,8 +166,12 @@ while (count($points) > 0) {
 }
 $results['points'][] = $point1;
 $results['points'] = idsToNumber($results['points']);
+write_log('(SEARCH):'. round((microtime(true) - $time_start) * 1000, 5) .' ms');
 
-//write_log('(SEARCH):'. round((microtime(true) - $time_start) * 1000, 5) .' ms');
+$time_start = microtime(true);
+$result = json_encode($results);
+write_log('(GENERATE RESULT):'. round((microtime(true) - $time_start) * 1000, 5) .' ms');
 
-echo json_encode($results);
+write_log('(all time):'. round((microtime(true) - $time_startA) * 1000, 5) .' ms');
+echo $result;
 ?>

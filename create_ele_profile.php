@@ -45,10 +45,10 @@ if(count($routes) < 1){
 	echo json_encode(array('type' => 'error', 'message' => 'minmum 1 połaczenie')); 
 	exit;
 }
-$point_start = - intval ($_POST['point_start']);
-$point_end = - intval ($_POST['point_end']);
+$point_start = intval ($_POST['point_start']);
+$point_end = intval ($_POST['point_end']);
 $routes = array_map(function($v){
-	return -$v;
+	return $v;
 }, $routes);
 
 
@@ -109,7 +109,7 @@ function printWay($way, $last){
 
 $ids = implode(', ', array_unique($routes));
 $Query = "SELECT wn.FK_way, wn.FK_node, X(n.GPS) AS lat, Y(n.GPS) AS lon, n.TYPE, n.NUMBER, n.ELEVATION  
-		FROM {$table_prefix}ways{$table_suffix} w INNER JOIN {$table_prefix}way_nodes{$table_suffix} wn ON w.FK_ID = wn.FK_way AND w.TYPE = 'base' INNER JOIN {$table_prefix}nodes{$table_suffix} n ON n.FK_ID = wn.FK_node
+		FROM {$table_prefix}ways{$table_suffix} w INNER JOIN {$table_prefix}way_nodes{$table_suffix} wn ON w.FK_ID = wn.FK_way AND w.TYPE = 'hard' INNER JOIN {$table_prefix}nodes{$table_suffix} n ON n.FK_ID = wn.FK_node
 		WHERE wn.FK_way IN ({$ids})
 		ORDER BY FIELD(wn.FK_way, {$ids}), wn.ID";
 $result = mysqli_query($connection, $Query);
