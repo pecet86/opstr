@@ -1,6 +1,6 @@
 # Project title
 
-Otwarta Polska SieÊ Tras Rowerowych
+Otwarta Polska Sieƒá Tras Rowerowych
 
 ## Documentation
 
@@ -8,14 +8,14 @@ To find out how to use this library follow [Documentation](http://siecrowerowa.p
 
 ## Installation
 
-* stworzyÊ bazÍ danych ze ürÛd≥a pliku SQL (dostÍpne w pÛüniejszym terminie)
-* skopiowaÊ do jednego folderu
-* skonfigurowaÊ plik lib/ustawienia.php w dostÍpnie do bazy danych
+* stworzyƒá bazƒô danych ze ≈∫r√≥d≈Ça pliku SQL (dostƒôpne w p√≥≈∫niejszym terminie)
+* skopiowaƒá do jednego folderu
+* skonfigurowaƒá plik lib/ustawienia.php w dostƒôpnie do bazy danych
 $baza_nazwa, $baza_uzytkownik, $baza_host = 'localhost', $bazw_haslo
 
-# Jeøeli na localhost nie dzia≥a to
-Za komentowaÊ w pliku .htaccess linijki od 43 to 54
-DodaÊ rozszerzenie ".php" w plikach:
+# Je≈ºeli na localhost nie dzia≈Ça to
+Za komentowaƒá w pliku .htaccess linijki od 43 to 54
+Dodaƒá rozszerzenie ".php" w plikach:
 * main.js -> visual_str, create_gpx, geDisplayPoi
 * select.js -> route_map, routes
 * route_map.js -> create_print
@@ -46,8 +46,8 @@ Projekt zawiera:
 
 ## License
 
-Projekt ten zosta≥ wydany na licencji GNU General Public License 3.0+. Zobacz do≥πczony pliku licencji dla szczegÛ≥Ûw.
+Projekt ten zosta≈Ç wydany na licencji GNU General Public License 3.0+. Zobacz do≈ÇƒÖczony pliku licencji dla szczeg√≥≈Ç√≥w.
 
 ## Author
 
-Pawe≥ Cal
+Pawe≈Ç Cal
